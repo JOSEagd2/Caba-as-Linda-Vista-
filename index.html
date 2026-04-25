@@ -4275,6 +4275,13 @@
         messagingSenderId: "540771185014",
         appId: "1:540771185014:web:3e7626e3aee30968de4a57",
       };
+      // Redirigir al dominio sin ñ si el navegador está usando el Punycode de la ñ
+      (function() {
+        const host = window.location.hostname;
+        if (host === 'xn--cabaaslindavistachimo-fbc.com' || host.endsWith('.xn--cabaaslindavistachimo-fbc.com')) {
+          window.location.replace(window.location.href.replace(host, 'cabanaslindavistachimo.com'));
+        }
+      })();
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
