@@ -48,11 +48,11 @@ function parseICAL(icsText) {
     const block = events[i];
 
     const startMatch =
-      block.match(/DTSTART;VALUE=DATE:([\d]{8})/) ||
-      block.match(/DTSTART:([\d]{8})/);
+      block.match(/DTSTART;VALUE=DATE:(\d{8})/) ||
+      block.match(/DTSTART:(\d{8})/);
     const endMatch =
-      block.match(/DTEND;VALUE=DATE:([\d]{8})/) ||
-      block.match(/DTEND:([\d]{8})/);
+      block.match(/DTEND;VALUE=DATE:(\d{8})/) ||
+      block.match(/DTEND:(\d{8})/);
 
     if (!startMatch || !endMatch) continue;
 
