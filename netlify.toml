@@ -6,7 +6,7 @@
 
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS="ID_DE_PROYECTO_DE_FUEGO_BASE"
-  SECRETS_SCAN_ENABLED="FALSO"
+  SECRETS_SCAN_SMART_DETECTION_ENABLED="false"
 
 [[redirects]]
   from = "/ical/:cabin"
