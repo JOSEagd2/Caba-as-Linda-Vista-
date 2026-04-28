@@ -1,12 +1,12 @@
 const admin = require("firebase-admin");
 
 if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(
+    Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, "base64").toString("utf8")
+  );
+
   admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId:   process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey:  process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
@@ -60,14 +60,12 @@ exports.handler = async (event) => {
 
   const cabinLabel = {
     lidia: "Cabaña Lidia",
-    lina:  "Cabaña Lina",
+    lina: "Cabaña Lina",
     bella: "Cabaña Bella",
   }[cabin];
 
   const events = reservations.map((r) => {
-    const checkOutDate = new Date(r.checkOut + "T00:00:00Z");
-    checkOutDate.setDate(checkOutDate.getDate() + 1);
-    const checkOutICS = checkOutDate.toISOString().split("T")[0].replace(/-/g, "");
+    const checkOutICS = toICSDate(r.checkOut);
 
     return [
       "BEGIN:VEVENT",
@@ -76,7 +74,6 @@ exports.handler = async (event) => {
       `DTSTART;VALUE=DATE:${toICSDate(r.checkIn)}`,
       `DTEND;VALUE=DATE:${checkOutICS}`,
       `SUMMARY:Reservado — ${cabinLabel}`,
-      `DESCRIPTION:Reserva confirmada desde cabanaslindavista.com`,
       "STATUS:CONFIRMED",
       "TRANSP:OPAQUE",
       "END:VEVENT",
@@ -88,10 +85,8 @@ exports.handler = async (event) => {
     "VERSION:2.0",
     "PRODID:-//Cabañas Linda Vista//ES",
     `X-WR-CALNAME:${cabinLabel} — Reservas Web`,
-    "X-WR-CALDESC:Reservas confirmadas en cabanaslindavista.com",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-PUBLISHED-TTL:PT1H",
     ...events,
     "END:VCALENDAR",
   ].join("\r\n");
@@ -99,9 +94,9 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers: {
-      "Content-Type":        "text/calendar; charset=utf-8",
-      "Content-Disposition": `inline; filename="${cabin}-reservas.ics"`,
-      "Cache-Control":       "no-cache, no-store, must-revalidate",
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Content-Disposition": `inline; filename=\"${cabin}-reservas.ics\"`,
+      "Cache-Control": "no-cache, no-store, must-revalidate",
     },
     body: icsContent,
   };
