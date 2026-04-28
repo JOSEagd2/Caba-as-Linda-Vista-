@@ -64,6 +64,8 @@ exports.handler = async (event) => {
     bella: "Cabaña Bella",
   }[cabin];
 
+  const CRLF = "\r\n";
+
   const placeholder = [
     "BEGIN:VEVENT",
     `UID:placeholder-${cabin}@cabanaslindavista.com`,
@@ -74,22 +76,20 @@ exports.handler = async (event) => {
     "STATUS:CONFIRMED",
     "TRANSP:TRANSPARENT",
     "END:VEVENT",
-  ].join("\r\n");
+  ].join(CRLF);
 
   const events = reservations.map((r) => {
-    const checkOutICS = toICSDate(r.checkOut);
-
     return [
       "BEGIN:VEVENT",
       `UID:${makeUID(r.id, cabin)}`,
       `DTSTAMP:${now}`,
       `DTSTART;VALUE=DATE:${toICSDate(r.checkIn)}`,
-      `DTEND;VALUE=DATE:${checkOutICS}`,
+      `DTEND;VALUE=DATE:${toICSDate(r.checkOut)}`,
       `SUMMARY:Reservado — ${cabinLabel}`,
       "STATUS:CONFIRMED",
       "TRANSP:OPAQUE",
       "END:VEVENT",
-    ].join("\r\n");
+    ].join(CRLF);
   });
 
   const icsContent = [
@@ -102,13 +102,13 @@ exports.handler = async (event) => {
     placeholder,
     ...events,
     "END:VCALENDAR",
-  ].join("\r\n");
+  ].join(CRLF);
 
   return {
     statusCode: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `inline; filename="${cabin}-reservas.ics"`,
+      "Content-Disposition": `attachment; filename="${cabin}-reservas.ics"`,
       "Cache-Control": "no-cache, no-store, must-revalidate",
     },
     body: icsContent,
