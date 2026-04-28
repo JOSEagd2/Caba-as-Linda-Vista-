@@ -64,6 +64,18 @@ exports.handler = async (event) => {
     bella: "Cabaña Bella",
   }[cabin];
 
+  const placeholder = [
+    "BEGIN:VEVENT",
+    `UID:placeholder-${cabin}@cabanaslindavista.com`,
+    `DTSTAMP:${now}`,
+    "DTSTART;VALUE=DATE:20200101",
+    "DTEND;VALUE=DATE:20200102",
+    `SUMMARY:Calendario ${cabinLabel}`,
+    "STATUS:CONFIRMED",
+    "TRANSP:TRANSPARENT",
+    "END:VEVENT",
+  ].join("\r\n");
+
   const events = reservations.map((r) => {
     const checkOutICS = toICSDate(r.checkOut);
 
@@ -87,6 +99,7 @@ exports.handler = async (event) => {
     `X-WR-CALNAME:${cabinLabel} — Reservas Web`,
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
+    placeholder,
     ...events,
     "END:VCALENDAR",
   ].join("\r\n");
@@ -95,7 +108,7 @@ exports.handler = async (event) => {
     statusCode: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `inline; filename=\"${cabin}-reservas.ics\"`,
+      "Content-Disposition": `inline; filename="${cabin}-reservas.ics"`,
       "Cache-Control": "no-cache, no-store, must-revalidate",
     },
     body: icsContent,
