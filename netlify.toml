@@ -13,6 +13,3 @@
   to = "/.netlify/functions/ical-feed?cabin=:cabina"
   status = 200
   force = true
-
-[[plugins]]
-package = "@netlify/plugin-functions-install-core"
