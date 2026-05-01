@@ -25,7 +25,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const cabin = event.queryStringParameters?.cabin?.toLowerCase();
+  const cabin = event.queryStringParameters?.cabin?.toLowerCase().trim();
   if (!cabin || !VALID_CABINS.includes(cabin)) {
     return {
       statusCode: 400,
@@ -41,25 +41,30 @@ exports.handler = async (event) => {
       .where("status", "==", "confirmed")
       .get();
 
-    // 🔍 LOG 1: cuántos documentos cumplen status="confirmed"
     console.log(`[ical-feed] Documentos encontrados: ${snapshot.size}`);
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      // 🔍 LOG 2: datos crudos de cada documento
+
+      // Normalizar cabins para que sea un array limpio
+      let cabinsRaw = data.cabins;
+      if (typeof cabinsRaw === 'string') {
+        cabinsRaw = cabinsRaw.trim().toLowerCase();
+      }
+      const cabins = Array.isArray(cabinsRaw)
+        ? cabinsRaw.map(c => (typeof c === 'string' ? c.trim().toLowerCase() : c))
+        : [cabinsRaw];
+
       console.log(
-        `[ical-feed] Doc ID: ${doc.id}, status: "${data.status}", cabins: "${data.cabins}"`
+        `[ical-feed] Doc ID: ${doc.id}, status: "${data.status}", cabins normalizado: ${JSON.stringify(cabins)}`
       );
-      const cabins = Array.isArray(data.cabins) ? data.cabins : [data.cabins];
+
       if (cabins.includes(cabin)) {
         reservations.push({ id: doc.id, ...data });
       }
     });
 
-    // 🔍 LOG 3: cuántas reservas coinciden con la cabina solicitada
-    console.log(
-      `[ical-feed] Reservas que coinciden con cabina "${cabin}": ${reservations.length}`
-    );
+    console.log(`[ical-feed] Reservas que coinciden con cabina "${cabin}": ${reservations.length}`);
     if (reservations.length > 0) {
       console.log(
         `[ical-feed] Primera reserva - checkIn tipo: ${typeof reservations[0].checkIn}, valor: ${reservations[0].checkIn}`
