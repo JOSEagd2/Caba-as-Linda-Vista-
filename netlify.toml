@@ -1,15 +1,18 @@
 [build]
-  functions="netlify/functions"
+  functions = "netlify/functions"
 
 [functions]
-  node_bundler="esbuild"
+  node_bundler = "esbuild"
 
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS="ID_DE_PROYECTO_DE_FUEGO_BASE"
-  SECRETS_SCAN_SMART_DETECTION_ENABLED="false"
+  SECRETS_SCAN_OMIT_KEYS = "ID_DE_PROYECTO_DE_FUEGO_BASE"
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
 [[redirects]]
-  from = "/ical/:cabin"
-  to = "/.netlify/functions/ical-feed?cabin=:cabin"
+  from = "/ical/:cabina"
+  to = "/.netlify/functions/ical-feed?cabin=:cabina"
   status = 200
   force = true
+
+[[plugins]]
+package = "@netlify/plugin-functions-install-core"
