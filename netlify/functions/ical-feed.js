@@ -109,7 +109,7 @@ exports.handler = async (event) => {
 
   const placeholder = [
     "BEGIN:VEVENT",
-    `UID:placeholder-${cabin}@cabanaslindavista.com`,
+    `UID:placeholder-${cabin}-${Date.now()}@cabanaslindavista.com`,
     `DTSTAMP:${now}`,
     "DTSTART;VALUE=DATE:20200101",
     "DTEND;VALUE=DATE:20200102",
@@ -150,7 +150,7 @@ exports.handler = async (event) => {
     statusCode: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${cabin}-reservas.ics"`,
+      "Content-Disposition": `inline; filename="${cabin}-reservas.ics"`,
       "Cache-Control": "no-cache, no-store, must-revalidate",
     },
     body: icsContent,
