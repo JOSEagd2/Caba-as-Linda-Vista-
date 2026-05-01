@@ -20,6 +20,22 @@ function makeUID(reservationId, cabin) {
   return `${reservationId}-${cabin}@cabanaslindavista.com`;
 }
 
+/**
+ * Aplica el plegado de línea según RFC 5545 (máximo 75 octetos).
+ * Las continuaciones añaden un espacio al principio de la nueva línea.
+ */
+function foldLine(line) {
+  const MAX = 75;
+  if (line.length <= MAX) return line;
+  let result = line.substring(0, MAX);
+  let remaining = line.substring(MAX);
+  while (remaining.length > 0) {
+    result += "\r\n " + remaining.substring(0, MAX - 1);
+    remaining = remaining.substring(MAX - 1);
+  }
+  return result;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -117,6 +133,7 @@ exports.handler = async (event) => {
     ].join(CRLF);
   });
 
+  // Construimos el contenido iCal, aplicando plegado a cada línea
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -127,7 +144,7 @@ exports.handler = async (event) => {
     placeholder,
     ...events,
     "END:VCALENDAR",
-  ].join(CRLF);
+  ].map(foldLine).join(CRLF);
 
   return {
     statusCode: 200,
