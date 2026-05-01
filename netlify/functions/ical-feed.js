@@ -4,7 +4,6 @@ if (!admin.apps.length) {
   const serviceAccount = JSON.parse(
     Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, "base64").toString("utf8")
   );
-
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
@@ -22,7 +21,6 @@ function makeUID(reservationId, cabin) {
 
 /**
  * Aplica el plegado de línea según RFC 5545 (máximo 75 octetos).
- * Las continuaciones añaden un espacio al principio de la nueva línea.
  */
 function foldLine(line) {
   const MAX = 75;
@@ -61,8 +59,6 @@ exports.handler = async (event) => {
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-
-      // Normalizar cabins para que sea un array limpio
       let cabinsRaw = data.cabins;
       if (typeof cabinsRaw === 'string') {
         cabinsRaw = cabinsRaw.trim().toLowerCase();
@@ -71,27 +67,35 @@ exports.handler = async (event) => {
         ? cabinsRaw.map(c => (typeof c === 'string' ? c.trim().toLowerCase() : c))
         : [cabinsRaw];
 
-      console.log(
-        `[ical-feed] Doc ID: ${doc.id}, status: "${data.status}", cabins normalizado: ${JSON.stringify(cabins)}`
-      );
-
       if (cabins.includes(cabin)) {
         reservations.push({ id: doc.id, ...data });
       }
     });
-
-    console.log(`[ical-feed] Reservas que coinciden con cabina "${cabin}": ${reservations.length}`);
-    if (reservations.length > 0) {
-      console.log(
-        `[ical-feed] Primera reserva - checkIn tipo: ${typeof reservations[0].checkIn}, valor: ${reservations[0].checkIn}`
-      );
-      console.log(
-        `[ical-feed] Primera reserva - checkOut tipo: ${typeof reservations[0].checkOut}, valor: ${reservations[0].checkOut}`
-      );
-    }
   } catch (err) {
     console.error("[ical-feed] Error leyendo Firestore:", err.message);
     return { statusCode: 500, body: "Error al leer disponibilidad." };
+  }
+
+  // ========== NUEVO: Obtener bloqueos externos ==========
+  let externalBlockings = [];
+  try {
+    const extSnapshot = await admin
+      .firestore()
+      .collection("external_blockings")
+      .where("cabin", "==", cabin)
+      .get();
+
+    extSnapshot.forEach((doc) => {
+      const block = doc.data();
+      // Solo incluir eventos futuros (o con margen de 1 día)
+      const nowDate = new Date();
+      const checkInDate = new Date(block.checkIn + "T00:00:00");
+      if (checkInDate >= new Date(nowDate.getTime() - 1 * 24 * 60 * 60 * 1000)) {
+        externalBlockings.push(block);
+      }
+    });
+  } catch (err) {
+    console.error("[ical-feed] Error leyendo bloqueos externos:", err.message);
   }
 
   const now = new Date()
@@ -133,6 +137,21 @@ exports.handler = async (event) => {
     ].join(CRLF);
   });
 
+  // ========== NUEVO: Eventos de bloqueos externos ==========
+  const externalEvents = externalBlockings.map((block) => {
+    return [
+      "BEGIN:VEVENT",
+      `UID:${block.uid}`,
+      `DTSTAMP:${now}`,
+      `DTSTART;VALUE=DATE:${toICSDate(block.checkIn)}`,
+      `DTEND;VALUE=DATE:${toICSDate(block.checkOut)}`,
+      `SUMMARY:${block.summary}`,
+      "STATUS:CONFIRMED",
+      "TRANSP:OPAQUE",
+      "END:VEVENT",
+    ].join(CRLF);
+  });
+
   // Construimos el contenido iCal, aplicando plegado a cada línea
   const icsContent = [
     "BEGIN:VCALENDAR",
@@ -143,6 +162,7 @@ exports.handler = async (event) => {
     "METHOD:PUBLISH",
     placeholder,
     ...events,
+    ...externalEvents,   // <-- incluimos los bloqueos externos
     "END:VCALENDAR",
   ].map(foldLine).join(CRLF);
 
