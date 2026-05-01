@@ -1,10 +1,11 @@
 {
   "nombre": "cabañas-linda-vista",
   "versión": "1.0.0",
+  "scripts": {
+    "postinstall": "cd netlify/functions && npm install"
+  },
   "dependencias": {
     "raya": "^14.0.0",
-    "firebase-admin": "^12.0.0",
-    "node-fetch": "^2.6.7",
-    "ical.js": "^1.5.0"
+    "firebase-admin": "^12.0.0"
   }
 }
