@@ -12,6 +12,8 @@ if (!admin.apps.length) {
 const VALID_CABINS = ["lidia", "lina", "bella"];
 
 function toICSDate(dateStr) {
+  // Si dateStr es undefined o null, devuelve cadena vacía (nunca se llamará gracias al filtro)
+  if (!dateStr) return "";
   return dateStr.replace(/-/g, "");
 }
 
@@ -76,7 +78,7 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: "Error al leer disponibilidad." };
   }
 
-  // ========== NUEVO: Obtener bloqueos externos ==========
+  // ========== Obtener bloqueos externos ==========
   let externalBlockings = [];
   try {
     const extSnapshot = await admin
@@ -87,7 +89,10 @@ exports.handler = async (event) => {
 
     extSnapshot.forEach((doc) => {
       const block = doc.data();
-      // Solo incluir eventos futuros (o con margen de 1 día)
+      // Solo procesar si tiene checkIn y checkOut definidos
+      if (!block.checkIn || !block.checkOut) return;
+
+      // Solo incluir eventos futuros (con margen de 1 día)
       const nowDate = new Date();
       const checkInDate = new Date(block.checkIn + "T00:00:00");
       if (checkInDate >= new Date(nowDate.getTime() - 1 * 24 * 60 * 60 * 1000)) {
@@ -137,20 +142,22 @@ exports.handler = async (event) => {
     ].join(CRLF);
   });
 
-  // ========== NUEVO: Eventos de bloqueos externos ==========
-  const externalEvents = externalBlockings.map((block) => {
-    return [
-      "BEGIN:VEVENT",
-      `UID:${block.uid}`,
-      `DTSTAMP:${now}`,
-      `DTSTART;VALUE=DATE:${toICSDate(block.checkIn)}`,
-      `DTEND;VALUE=DATE:${toICSDate(block.checkOut)}`,
-      `SUMMARY:${block.summary}`,
-      "STATUS:CONFIRMED",
-      "TRANSP:OPAQUE",
-      "END:VEVENT",
-    ].join(CRLF);
-  });
+  // ========== Eventos de bloqueos externos (solo los que tienen fechas válidas) ==========
+  const externalEvents = externalBlockings
+    .filter(block => block.checkIn && block.checkOut) // doble seguridad
+    .map((block) => {
+      return [
+        "BEGIN:VEVENT",
+        `UID:${block.uid}`,
+        `DTSTAMP:${now}`,
+        `DTSTART;VALUE=DATE:${toICSDate(block.checkIn)}`,
+        `DTEND;VALUE=DATE:${toICSDate(block.checkOut)}`,
+        `SUMMARY:${block.summary}`,
+        "STATUS:CONFIRMED",
+        "TRANSP:OPAQUE",
+        "END:VEVENT",
+      ].join(CRLF);
+    });
 
   // Construimos el contenido iCal, aplicando plegado a cada línea
   const icsContent = [
@@ -162,7 +169,7 @@ exports.handler = async (event) => {
     "METHOD:PUBLISH",
     placeholder,
     ...events,
-    ...externalEvents,   // <-- incluimos los bloqueos externos
+    ...externalEvents,
     "END:VCALENDAR",
   ].map(foldLine).join(CRLF);
 
