@@ -41,13 +41,33 @@ exports.handler = async (event) => {
       .where("status", "==", "confirmed")
       .get();
 
+    // 🔍 LOG 1: cuántos documentos cumplen status="confirmed"
+    console.log(`[ical-feed] Documentos encontrados: ${snapshot.size}`);
+
     snapshot.forEach((doc) => {
       const data = doc.data();
+      // 🔍 LOG 2: datos crudos de cada documento
+      console.log(
+        `[ical-feed] Doc ID: ${doc.id}, status: "${data.status}", cabins: "${data.cabins}"`
+      );
       const cabins = Array.isArray(data.cabins) ? data.cabins : [data.cabins];
       if (cabins.includes(cabin)) {
         reservations.push({ id: doc.id, ...data });
       }
     });
+
+    // 🔍 LOG 3: cuántas reservas coinciden con la cabina solicitada
+    console.log(
+      `[ical-feed] Reservas que coinciden con cabina "${cabin}": ${reservations.length}`
+    );
+    if (reservations.length > 0) {
+      console.log(
+        `[ical-feed] Primera reserva - checkIn tipo: ${typeof reservations[0].checkIn}, valor: ${reservations[0].checkIn}`
+      );
+      console.log(
+        `[ical-feed] Primera reserva - checkOut tipo: ${typeof reservations[0].checkOut}, valor: ${reservations[0].checkOut}`
+      );
+    }
   } catch (err) {
     console.error("[ical-feed] Error leyendo Firestore:", err.message);
     return { statusCode: 500, body: "Error al leer disponibilidad." };
