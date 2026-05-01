@@ -11,18 +11,23 @@ if (!admin.apps.length) {
   });
 }
 
-const ICAL_SOURCES = {
-  lidia: [
-    "https://www.airbnb.com/calendar/ical/1017583253365154978.ics?t=8fe607394a104ba5a8baeb3d7035251f&locale=es-419",
-    "https://ical.booking.com/v1/export?t=062d9969-f6ea-4a39-88c3-7b93a2be54c0g",
-  ],
-  lina: [
-    "https://www.airbnb.com/calendar/ical/1021750622514893793.ics?t=6f478838eb7b4fc1a81582b4888ec790&locale=es-419",
-  ],
-  bella: [
-    "https://www.airbnb.com/calendar/ical/1052462481828244019.ics?t=bac773f1a7214bd9ae111e613c332526&locale=es-419",
-  ],
-};
+// Las URLs ahora se toman de las variables de entorno
+function getICAL_SOURCES() {
+  const sources = {
+    lidia: [],
+    lina: [],
+    bella: [],
+  };
+
+  if (process.env.AIRBNB_ICAL_LIDIA) sources.lidia.push(process.env.AIRBNB_ICAL_LIDIA);
+  if (process.env.BOOKING_ICAL_LIDIA) sources.lidia.push(process.env.BOOKING_ICAL_LIDIA);
+  if (process.env.AIRBNB_ICAL_LINA) sources.lina.push(process.env.AIRBNB_ICAL_LINA);
+  // Lina no tiene Booking, así que no se agrega
+  if (process.env.AIRBNB_ICAL_BELLA) sources.bella.push(process.env.AIRBNB_ICAL_BELLA);
+  // Bella tampoco tiene Booking
+
+  return sources;
+}
 
 function fetchURL(url) {
   return new Promise((resolve, reject) => {
@@ -88,6 +93,7 @@ async function getFirestoreRanges(cabin) {
 }
 
 exports.handler = async () => {
+  const ICAL_SOURCES = getICAL_SOURCES();
   const cabins = Object.keys(ICAL_SOURCES);
   const result = {};
 
