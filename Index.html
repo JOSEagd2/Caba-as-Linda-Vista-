@@ -1,3 +1,6 @@
+Aquí tienes el código HTML completo con los cambios aplicados. He integrado los nuevos elementos en el menú, el CSS adaptativo y el script que conecta los botones del menú móvil con la funcionalidad existente. Todo lo demás permanece exactamente igual.
+
+```html
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -1898,6 +1901,22 @@
       #auth-loading-toast.is-visible {
         transform: translateX(-50%) translateY(0);
       }
+      /* ── MÓVIL: ocultar botones independientes y mostrar los del menú ── */
+      @media (max-width: 899px) {
+        .phone-link,
+        #btnOpenAuth {
+          display: none !important;
+        }
+        .nav-mobile-action {
+          display: block;
+        }
+      }
+      /* ── ESCRITORIO: ocultar los ítems de acción del menú ── */
+      @media (min-width: 900px) {
+        .nav-mobile-action {
+          display: none;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1990,6 +2009,9 @@
               </li>
               <li><a href="#galeria">Galería</a></li>
               <li><a href="#contacto">Cómo llegar</a></li>
+              <!-- NUEVOS ÍTEMS SOLO MÓVIL -->
+              <li class="nav-mobile-action"><a href="#" id="navWhatsApp"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a></li>
+              <li class="nav-mobile-action"><a href="#" id="navLogin"><i class="fa-solid fa-right-to-bracket"></i> Iniciar sesión</a></li>
             </ul>
           </nav>
           <a
@@ -4867,5 +4889,27 @@
         return true;
       };
     </script>
+    <!-- SCRIPT MÓVIL: conecta los ítems del menú con los botones ocultos -->
+    <script>
+      (function() {
+        const navWhatsApp = document.getElementById('navWhatsApp');
+        if (navWhatsApp) {
+          navWhatsApp.addEventListener('click', function(e) {
+            e.preventDefault();
+            const phoneLink = document.querySelector('.phone-link');
+            if (phoneLink) window.open(phoneLink.href, '_blank');
+          });
+        }
+        const navLogin = document.getElementById('navLogin');
+        if (navLogin) {
+          navLogin.addEventListener('click', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnOpenAuth');
+            if (btn) btn.click();
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
+```
